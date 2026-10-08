@@ -1,0 +1,38 @@
+export type { ThemeMode } from '@/types';
+
+export const AppTheme = {
+  light: {
+    background: '#F6F4ED',
+    surface: '#FFFFFF',
+    surfaceSoft: '#EDF1E8',
+    text: '#24352E',
+    muted: '#78847B',
+    primary: '#39715D',
+    primarySoft: '#E0EBE2',
+    positive: '#54866A',
+    negative: '#C65C50',
+    highlight: '#E4B35D',
+    hero: '#315F50',
+    heroText: '#FFFDF5',
+    border: '#E3E6DB',
+    field: '#FAFAF6',
+    shadow: '#26372E',
+  },
+  dark: {
+    background: '#171D19',
+    surface: '#202923',
+    surfaceSoft: '#2A362E',
+    text: '#F0F1E8',
+    muted: '#A5B0A5',
+    primary: '#9BC8A8',
+    primarySoft: '#2B4033',
+    positive: '#8CC69A',
+    negative: '#F08C7D',
+    highlight: '#E4B35D',
+    hero: '#263F35',
+    heroText: '#F7F5E9',
+    border: '#37443A',
+    field: '#202923',
+    shadow: '#000000',
+  },
+} as const;
