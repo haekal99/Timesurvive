@@ -4,25 +4,23 @@
     "slug": "TimeSurvive",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/timesurvive-icon.png",
     "scheme": "timesurvive",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/timesurvive-icon.png"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#080711",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/timesurvive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.haekal99.TimeSurvive"
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/timesurvive-favicon.png"
     },
     "plugins": [
       [
@@ -38,8 +36,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#080711",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "image": "./assets/images/timesurvive-icon.png",
+          "imageWidth": 140
         }
       ],
       [

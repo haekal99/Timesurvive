@@ -30,6 +30,10 @@ const goldTabs: { label: string; value: GoldTab }[] = [
   { label: 'Tagihan Bulanan', value: 'bills' },
   { label: 'History', value: 'history' },
 ];
+const transactionScopes = [
+  { label: 'Bulan ini', value: 'month' },
+  { label: 'Semua transaksi', value: 'all' },
+];
 const money = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
 
 function parseDate(value: string) {
@@ -72,6 +76,7 @@ export default function GoldScreen() {
   const { quickAdd } = useLocalSearchParams<{ quickAdd?: string }>();
   const colors = useColors();
   const [tab, setTab] = useState<GoldTab>('transactions');
+  const [transactionScope, setTransactionScope] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -93,7 +98,9 @@ export default function GoldScreen() {
   const [dateTarget, setDateTarget] = useState<DateTarget | null>(null);
   const [exporting, setExporting] = useState(false);
   const reconciledPayments = useRef(new Set<string>());
-  const monthItems = data.transactions.filter((item) => item.date.startsWith(selectedMonth));
+  const monthItems = data.transactions.filter(
+    (item) => transactionScope === 'all' || item.date.startsWith(selectedMonth),
+  );
   const income = monthItems.filter((item) => item.kind === 'income').reduce((sum, item) => sum + item.amount, 0);
   const expenses = monthItems.filter((item) => item.kind === 'expense').reduce((sum, item) => sum + item.amount, 0);
   const balance = data.transactions.reduce((sum, item) => sum + (item.kind === 'income' ? item.amount : -item.amount), 0);
@@ -377,26 +384,29 @@ export default function GoldScreen() {
 
       {tab === 'transactions' ? (
         <>
-          <Panel style={styles.monthPanel}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Bulan sebelumnya" onPress={() => setSelectedMonth((month) => shiftMonth(month, -1))} style={styles.monthArrow}>
-              <Text style={[styles.monthArrowText, { color: colors.primary }]}>‹</Text>
-            </Pressable>
-            <Text style={[styles.monthLabel, { color: colors.text }]}>{new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(parseDate(`${selectedMonth}-01`))}</Text>
-            <Pressable accessibilityRole="button" accessibilityLabel="Bulan berikutnya" onPress={() => setSelectedMonth((month) => shiftMonth(month, 1))} style={styles.monthArrow}>
-              <Text style={[styles.monthArrowText, { color: colors.primary }]}>›</Text>
-            </Pressable>
+          <Panel>
+            <View style={styles.monthPanel}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Bulan sebelumnya" disabled={transactionScope === 'all'} onPress={() => setSelectedMonth((month) => shiftMonth(month, -1))} style={[styles.monthArrow, transactionScope === 'all' && { opacity: 0.4 }]}>
+                <Text style={[styles.monthArrowText, { color: colors.primary }]}>‹</Text>
+              </Pressable>
+              <Text style={[styles.monthLabel, { color: colors.text }]}>{transactionScope === 'all' ? 'Semua bulan' : new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(parseDate(`${selectedMonth}-01`))}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Bulan berikutnya" disabled={transactionScope === 'all'} onPress={() => setSelectedMonth((month) => shiftMonth(month, 1))} style={[styles.monthArrow, transactionScope === 'all' && { opacity: 0.4 }]}>
+                <Text style={[styles.monthArrowText, { color: colors.primary }]}>›</Text>
+              </Pressable>
+            </View>
+            <ChoiceGroup label="Tampilkan catatan" value={transactionScope} options={transactionScopes} onChange={setTransactionScope} />
           </Panel>
 
           <View style={styles.flowRow}>
             <Panel style={styles.flowCard}>
-              <Text style={[styles.flowLabel, { color: colors.muted }]}>Pemasukan bulan ini</Text>
+              <Text style={[styles.flowLabel, { color: colors.muted }]}>{transactionScope === 'all' ? 'Total pemasukan' : 'Pemasukan bulan ini'}</Text>
               <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.flowValue, { color: colors.positive }]}>{money.format(income)}</Text>
               <View style={[styles.track, { backgroundColor: colors.surfaceSoft }]}>
                 <View style={[styles.fill, { width: `${(income / maxFlow) * 100}%`, backgroundColor: colors.positive }]} />
               </View>
             </Panel>
             <Panel style={styles.flowCard}>
-              <Text style={[styles.flowLabel, { color: colors.muted }]}>Pengeluaran bulan ini</Text>
+              <Text style={[styles.flowLabel, { color: colors.muted }]}>{transactionScope === 'all' ? 'Total pengeluaran' : 'Pengeluaran bulan ini'}</Text>
               <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.flowValue, { color: colors.negative }]}>{money.format(expenses)}</Text>
               <View style={[styles.track, { backgroundColor: colors.surfaceSoft }]}>
                 <View style={[styles.fill, { width: `${(expenses / maxFlow) * 100}%`, backgroundColor: colors.negative }]} />
@@ -404,7 +414,7 @@ export default function GoldScreen() {
             </Panel>
           </View>
 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Riwayat transaksi bulan ini</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{transactionScope === 'all' ? 'Semua riwayat transaksi' : 'Riwayat transaksi bulan ini'}</Text>
           {monthItems.length ? [...monthItems].sort((left, right) => right.date.localeCompare(left.date)).map((transaction) => (
             <Panel key={transaction.id}>
               <View style={styles.transactionRow}>

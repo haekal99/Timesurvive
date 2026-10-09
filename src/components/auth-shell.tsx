@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,9 +19,11 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
           <KeyboardAwareScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
               <View style={styles.brand}>
-                <View style={[styles.mark, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.markText}>T</Text>
-                </View>
+                <Image
+                  source={require('@/assets/images/timesurvive-icon.png')}
+                  contentFit="cover"
+                  style={styles.mark}
+                />
                 <Text style={[styles.brandText, { color: colors.text }]}>TimeSurvive</Text>
               </View>
               <ThemeToggle />
@@ -47,8 +50,7 @@ const styles = StyleSheet.create({
   scroll: { width: '100%', maxWidth: 520, alignSelf: 'center', padding: 20, paddingTop: 18, flexGrow: 1, justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  mark: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  markText: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  mark: { width: 38, height: 38, borderRadius: 10 },
   brandText: { fontSize: 16, fontWeight: '800' },
   formCard: { borderWidth: 1, borderRadius: 22, padding: 22 },
   kicker: { fontSize: 10, fontWeight: '800', marginBottom: 9 },

@@ -13,6 +13,10 @@ const platforms = [
   { label: 'Lainnya', value: 'Lainnya' },
 ];
 const ratings = [1, 2, 3, 4, 5].map((value) => ({ label: `${value} ★`, value: String(value) }));
+const historyScopes = [
+  { label: 'Tanggal ini', value: 'selected' },
+  { label: 'Semua tanggal', value: 'all' },
+];
 
 function inRecentWeek(date: string) {
   const [year, month, day] = date.split('-').map(Number);
@@ -39,6 +43,7 @@ export default function GamingScreen() {
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState(dateKey());
   const [selectedDate, setSelectedDate] = useState(dateKey());
+  const [historyScope, setHistoryScope] = useState('all');
   const [formErrors, setFormErrors] = useState<{
     title?: string;
     hours?: string;
@@ -47,7 +52,11 @@ export default function GamingScreen() {
   }>({});
   const totalWeek = data.games.filter((game) => inRecentWeek(game.date)).reduce((total, game) => total + game.minutes, 0);
   const selectedGames = data.games.filter((game) => game.date === selectedDate);
+  const visibleGames = (historyScope === 'all' ? data.games : selectedGames)
+    .slice()
+    .sort((left, right) => right.date.localeCompare(left.date));
   const totalSelectedDay = selectedGames.reduce((total, game) => total + game.minutes, 0);
+  const visibleMinutes = visibleGames.reduce((total, game) => total + game.minutes, 0);
 
   const shiftDate = (amount: number) => {
     const selected = new Date(`${selectedDate}T12:00:00`);
@@ -57,8 +66,11 @@ export default function GamingScreen() {
 
   useEffect(() => {
     if (quickAdd) {
-      setFormOpen(true);
-      router.setParams({ quickAdd: '' });
+      const timeout = setTimeout(() => {
+        setFormOpen(true);
+        router.setParams({ quickAdd: '' });
+      }, 0);
+      return () => clearTimeout(timeout);
     }
   }, [quickAdd]);
 
@@ -121,15 +133,19 @@ export default function GamingScreen() {
           <Text style={[styles.dateArrowText, { color: colors.primary }]}>‹</Text>
         </Pressable>
         <View style={styles.dateCopy}>
-          <Text style={[styles.dateLabel, { color: colors.text }]}>{new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${selectedDate}T12:00:00`))}</Text>
-          <Text style={[styles.caption, { color: colors.muted, marginTop: 3 }]}>{selectedGames.length} sesi · {Math.floor(totalSelectedDay / 60)}j {totalSelectedDay % 60}m</Text>
+          <Text style={[styles.dateLabel, { color: colors.text }]}>{historyScope === 'all' ? 'Semua tanggal' : new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${selectedDate}T12:00:00`))}</Text>
+          <Text style={[styles.caption, { color: colors.muted, marginTop: 3 }]}>{historyScope === 'all' ? `${visibleGames.length} sesi tersimpan` : `${selectedGames.length} sesi`} · {Math.floor((historyScope === 'all' ? visibleMinutes : totalSelectedDay) / 60)}j {(historyScope === 'all' ? visibleMinutes : totalSelectedDay) % 60}m</Text>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Hari berikutnya" onPress={() => shiftDate(1)} style={styles.dateArrow}>
           <Text style={[styles.dateArrowText, { color: colors.primary }]}>›</Text>
         </Pressable>
       </Panel>
 
-      {totalSelectedDay > 180 ? (
+      <Panel>
+        <ChoiceGroup label="Tampilkan catatan" value={historyScope} options={historyScopes} onChange={setHistoryScope} />
+      </Panel>
+
+      {historyScope === 'selected' && totalSelectedDay > 180 ? (
         <Panel style={{ backgroundColor: colors.positive + '12', borderColor: colors.positive + '44' }}>
           <Text style={[styles.alertTitle, { color: colors.positive }]}>Waktunya rehat sejenak</Text>
           <Text style={[styles.caption, { color: colors.muted }]}>Kamu sudah bermain {Math.floor(totalSelectedDay / 60)} jam {totalSelectedDay % 60} menit pada tanggal ini. Minum air dan istirahatkan mata, ya.</Text>
@@ -137,7 +153,7 @@ export default function GamingScreen() {
       ) : null}
 
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Riwayat sesi</Text>
-      {selectedGames.length ? selectedGames.map((game) => (
+      {visibleGames.length ? visibleGames.map((game) => (
         <Panel key={game.id}>
           <View style={styles.totalRow}>
             <View style={styles.gameCopy}>

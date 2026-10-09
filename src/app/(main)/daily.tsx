@@ -12,12 +12,17 @@ const filters = [
   { label: 'Selesai', value: 'done' },
   { label: 'Belum', value: 'open' },
 ];
+const historyScopes = [
+  { label: 'Tanggal ini', value: 'selected' },
+  { label: 'Semua tanggal', value: 'all' },
+];
 
 export default function DailyScreen() {
   const { data, addRoutine, updateRoutine, deleteRoutine } = useApp();
   const { quickAdd } = useLocalSearchParams<{ quickAdd?: string }>();
   const colors = useColors();
   const [filter, setFilter] = useState('all');
+  const [historyScope, setHistoryScope] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -30,23 +35,22 @@ export default function DailyScreen() {
   const [focusTitle, setFocusTitle] = useState('');
   const [focusSeconds, setFocusSeconds] = useState(25 * 60);
   const [focusRunning, setFocusRunning] = useState(false);
-  const routines = data.routines.filter((routine) => routine.date === selectedDate);
-  const completed = routines.filter((routine) => routine.done).length;
+  const selectedDayRoutines = data.routines.filter((routine) => routine.date === selectedDate);
+  const completed = selectedDayRoutines.filter((routine) => routine.done).length;
+  const routines = (historyScope === 'all' ? data.routines : selectedDayRoutines)
+    .slice()
+    .sort((left, right) => right.date.localeCompare(left.date) || left.time.localeCompare(right.time));
   const visibleRoutines = routines.filter((routine) =>
     filter === 'all' || (filter === 'done' ? routine.done : !routine.done),
   );
 
   useEffect(() => {
-    if (!focusRunning) return;
-    const interval = setInterval(() => {
+    if (!focusRunning || focusSeconds === 0) return;
+    const timeout = setTimeout(() => {
       setFocusSeconds((remaining) => Math.max(0, remaining - 1));
     }, 1000);
-    return () => clearInterval(interval);
-  }, [focusRunning]);
-
-  useEffect(() => {
-    if (focusSeconds === 0) setFocusRunning(false);
-  }, [focusSeconds]);
+    return () => clearTimeout(timeout);
+  }, [focusRunning, focusSeconds]);
 
   useEffect(() => {
     const interval = setInterval(() => setClock(new Date()), 60_000);
@@ -55,13 +59,16 @@ export default function DailyScreen() {
 
   useEffect(() => {
     if (quickAdd) {
-      setEditingId(null);
-      setTime('');
-      setTitle('');
-      setDate(selectedDate);
-      setFormErrors({});
-      setFormOpen(true);
-      router.setParams({ quickAdd: '' });
+      const timeout = setTimeout(() => {
+        setEditingId(null);
+        setTime('');
+        setTitle('');
+        setDate(selectedDate);
+        setFormErrors({});
+        setFormOpen(true);
+        router.setParams({ quickAdd: '' });
+      }, 0);
+      return () => clearTimeout(timeout);
     }
   }, [quickAdd, selectedDate]);
 
@@ -120,16 +127,17 @@ export default function DailyScreen() {
       <Panel>
         <View style={styles.summaryLine}>
           <View>
-            <Text style={[styles.summaryTitle, { color: colors.text }]}>Progres hari ini</Text>
-            <Text style={[styles.summaryCaption, { color: colors.muted }]}>{completed} dari {data.routines.length} aktivitas selesai</Text>
+            <Text style={[styles.summaryTitle, { color: colors.text }]}>Progres tanggal terpilih</Text>
+            <Text style={[styles.summaryCaption, { color: colors.muted }]}>{completed} dari {selectedDayRoutines.length} aktivitas selesai</Text>
           </View>
           <Text style={[styles.percent, { color: colors.positive }]}>
-            {data.routines.length ? Math.round((completed / data.routines.length) * 100) : 0}%
+            {selectedDayRoutines.length ? Math.round((completed / selectedDayRoutines.length) * 100) : 0}%
           </Text>
         </View>
         <View style={[styles.progressTrack, { backgroundColor: colors.surfaceSoft }]}>
-          <View style={[styles.progressFill, { width: `${data.routines.length ? (completed / data.routines.length) * 100 : 0}%`, backgroundColor: colors.positive }]} />
+          <View style={[styles.progressFill, { width: `${selectedDayRoutines.length ? (completed / selectedDayRoutines.length) * 100 : 0}%`, backgroundColor: colors.positive }]} />
         </View>
+        <ChoiceGroup label="Tampilkan catatan" value={historyScope} options={historyScopes} onChange={setHistoryScope} />
         <ChoiceGroup value={filter} options={filters} onChange={setFilter} />
       </Panel>
 
@@ -150,7 +158,11 @@ export default function DailyScreen() {
             <Text style={styles.checkMark}>{routine.done ? '✓' : ''}</Text>
           </Pressable>
           <View style={styles.routineCopy}>
-              <Text style={[styles.routineTime, { color: colors.primary }]}>{routine.time}{selectedDate === dateKey() && isRoutineCurrent(routine.time, clock) ? ' · SEKARANG' : ''}</Text>
+              <Text style={[styles.routineTime, { color: colors.primary }]}>
+                {historyScope === 'all' ? `${routine.date} · ` : ''}
+                {routine.time}
+                {routine.date === dateKey() && isRoutineCurrent(routine.time, clock) ? ' · SEKARANG' : ''}
+              </Text>
             <Text style={[styles.routineTitle, { color: routine.done ? colors.muted : colors.text, textDecorationLine: routine.done ? 'line-through' : 'none' }]}>
               {routine.title}
             </Text>
@@ -168,7 +180,10 @@ export default function DailyScreen() {
           </View>
         </Panel>
       )) : (
-        <EmptyState title="Tidak ada agenda" description="Coba ubah filter atau tambahkan aktivitas untuk tanggal ini." />
+        <EmptyState
+          title="Tidak ada agenda"
+          description={historyScope === 'all' ? 'Tambahkan aktivitas untuk melihat riwayat di sini.' : 'Coba ubah filter atau tambahkan aktivitas untuk tanggal ini.'}
+        />
       )}
 
       <ModalSheet visible={formOpen} title={editingId ? 'Edit aktivitas' : 'Aktivitas baru'} onClose={() => setFormOpen(false)}>

@@ -33,7 +33,7 @@ export function AnimatedSplashOverlay() {
     },
   });
 
-  const image = <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />;
+  const image = <Image style={styles.image} source={require('@/assets/images/timesurvive-icon.png')} contentFit="cover" />;
 
   return animate ? (
     <Animated.View
@@ -104,7 +104,11 @@ export function AnimatedIcon() {
 
       <Animated.View entering={keyframe.duration(DURATION)} style={styles.background} />
       <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
+        <Image
+          style={styles.image}
+          source={require('@/assets/images/timesurvive-icon.png')}
+          contentFit="cover"
+        />
       </Animated.View>
     </View>
   );
@@ -128,8 +132,9 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   image: {
-    width: 76,
-    height: 71,
+    width: 112,
+    height: 112,
+    borderRadius: 20,
   },
   background: {
     borderRadius: 40,
@@ -140,7 +145,7 @@ const styles = StyleSheet.create({
   },
   splashOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#208AEF',
+    backgroundColor: '#080711',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,
