@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, ChoiceGroup, ConfirmDialog, EmptyState, Field, ModalSheet, Page, Panel, useColors } from '@/components/app-ui';
 import { dateKey, useApp } from '@/context/app-context';
+import { useSuccessFeedback } from '@/hooks/use-success-feedback';
 import { isValidDateKey } from '@/utils/validation';
 
 const platforms = [
@@ -32,6 +33,7 @@ export default function GamingScreen() {
   const { data, addGame, updateGame, deleteGame } = useApp();
   const { quickAdd } = useLocalSearchParams<{ quickAdd?: string }>();
   const colors = useColors();
+  const { successMessage, showSuccess, clearSuccess } = useSuccessFeedback();
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -75,6 +77,7 @@ export default function GamingScreen() {
   }, [quickAdd]);
 
   const openForm = (game?: (typeof data.games)[number]) => {
+    clearSuccess();
     setEditingId(game?.id ?? null);
     setTitle(game?.title ?? '');
     setHours(game ? String(Math.floor(game.minutes / 60)) : '0');
@@ -109,13 +112,20 @@ export default function GamingScreen() {
       return;
     }
     const entry = { title: title.trim(), minutes: duration, platform, rating: Number(rating), notes: notes.trim(), date: date.trim() };
-    if (editingId) updateGame(editingId, entry);
-    else addGame(entry);
+    if (editingId) {
+      updateGame(editingId, entry);
+      showSuccess(`Sesi "${entry.title}" berhasil diperbarui.`);
+    } else {
+      addGame(entry);
+      showSuccess(`Sesi "${entry.title}" berhasil ditambahkan.`);
+    }
+    setSelectedDate(entry.date);
+    setHistoryScope('selected');
     setFormOpen(false);
   };
 
   return (
-    <Page title="Log Gaming" subtitle="Nikmati sesi bermain, tetap jaga jeda." action={<Button compact title="+ Catat sesi" onPress={() => openForm()} />}>
+    <Page title="Log Gaming" subtitle="Nikmati sesi bermain, tetap jaga jeda." successMessage={successMessage} action={<Button compact title="+ Catat sesi" onPress={() => openForm()} />}>
       <Panel>
         <Text style={[styles.kicker, { color: colors.muted }]}>TOTAL MINGGU INI</Text>
         <View style={styles.totalRow}>

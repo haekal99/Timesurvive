@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, ChoiceGroup, ConfirmDialog, EmptyState, Field, ModalSheet, Page, Panel, useColors } from '@/components/app-ui';
 import { dateKey, useApp } from '@/context/app-context';
+import { useSuccessFeedback } from '@/hooks/use-success-feedback';
 import { isValidDateKey, isValidTimeRange } from '@/utils/validation';
 
 const filters = [
@@ -23,6 +24,7 @@ export default function DailyScreen() {
   const colors = useColors();
   const [filter, setFilter] = useState('all');
   const [historyScope, setHistoryScope] = useState('all');
+  const { successMessage, showSuccess, clearSuccess } = useSuccessFeedback();
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -79,6 +81,7 @@ export default function DailyScreen() {
   };
 
   const openForm = (routine?: (typeof data.routines)[number]) => {
+    clearSuccess();
     setEditingId(routine?.id ?? null);
     setTime(routine?.time ?? '');
     setTitle(routine?.title ?? '');
@@ -97,8 +100,17 @@ export default function DailyScreen() {
     if (Object.values(errors).some(Boolean)) {
       return;
     }
-    if (editingId) updateRoutine(editingId, { time: time.trim(), title: title.trim(), date: date.trim() });
-    else addRoutine({ time: time.trim(), title: title.trim(), date: date.trim() });
+    const routineDate = date.trim();
+    const routineTitle = title.trim();
+    if (editingId) {
+      updateRoutine(editingId, { time: time.trim(), title: routineTitle, date: routineDate });
+      showSuccess(`Aktivitas "${routineTitle}" berhasil diperbarui.`);
+    } else {
+      addRoutine({ time: time.trim(), title: routineTitle, date: routineDate });
+      showSuccess(`Aktivitas "${routineTitle}" berhasil ditambahkan.`);
+    }
+    setSelectedDate(routineDate);
+    setHistoryScope('selected');
     setFormOpen(false);
   };
 
@@ -106,6 +118,7 @@ export default function DailyScreen() {
     <Page
       title="Log Harian"
       subtitle="Ritme yang ringan, satu agenda pada satu waktu."
+      successMessage={successMessage}
       action={<Button compact title="+ Tambah" onPress={() => openForm()} />}>
       <Panel style={styles.datePanel}>
         <Pressable accessibilityRole="button" accessibilityLabel="Hari sebelumnya" onPress={() => shiftDate(-1)} style={styles.dateArrow}>

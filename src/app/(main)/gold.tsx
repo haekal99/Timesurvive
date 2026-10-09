@@ -16,6 +16,7 @@ import {
 import type { MonthlyBill, MonthlyBillDraft } from '@/database/monthly-bills';
 import { createRecordId, dateKey, useApp } from '@/context/app-context';
 import type { Transaction } from '@/context/app-context';
+import { useSuccessFeedback } from '@/hooks/use-success-feedback';
 import { createFinanceReportRows, exportFinanceReport } from '@/utils/finance-report';
 import { isValidDateKey, parseRupiahAmount } from '@/utils/validation';
 
@@ -75,6 +76,7 @@ export default function GoldScreen() {
   const { data, addTransaction, updateTransaction, deleteTransaction } = useApp();
   const { quickAdd } = useLocalSearchParams<{ quickAdd?: string }>();
   const colors = useColors();
+  const { successMessage, showSuccess, clearSuccess } = useSuccessFeedback();
   const [tab, setTab] = useState<GoldTab>('transactions');
   const [transactionScope, setTransactionScope] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
@@ -123,6 +125,7 @@ export default function GoldScreen() {
   }, []);
 
   const openTransactionForm = useCallback((transaction?: Transaction) => {
+    clearSuccess();
     setEditingId(transaction?.id ?? null);
     setKind(transaction?.kind ?? 'expense');
     setAmount(transaction ? String(transaction.amount) : '');
@@ -131,7 +134,7 @@ export default function GoldScreen() {
     setNotes(transaction?.notes ?? '');
     setTransactionFieldErrors({});
     setFormOpen(true);
-  }, [selectedMonth]);
+  }, [clearSuccess, selectedMonth]);
 
   useEffect(() => {
     let cancelled = false;
@@ -195,8 +198,15 @@ export default function GoldScreen() {
       return;
     }
     const entry = { kind, amount: value, category: category.trim(), date: date.trim(), notes: notes.trim() };
-    if (editingId) updateTransaction(editingId, entry);
-    else addTransaction(entry);
+    if (editingId) {
+      updateTransaction(editingId, entry);
+      showSuccess('Transaksi berhasil diperbarui.');
+    } else {
+      addTransaction(entry);
+      showSuccess('Transaksi berhasil ditambahkan.');
+    }
+    setSelectedMonth(entry.date.slice(0, 7));
+    setTransactionScope('month');
     setFormOpen(false);
   };
 
@@ -244,6 +254,7 @@ export default function GoldScreen() {
       await reloadBills();
       setBillFormOpen(false);
       setEditingBill(null);
+      showSuccess(editingBill ? 'Tagihan berhasil diperbarui.' : 'Tagihan berhasil ditambahkan.');
     } catch (error) {
       setBillError(`Tagihan gagal disimpan: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -262,6 +273,7 @@ export default function GoldScreen() {
         addTransaction(createBillPayment(bill, paidDate), transactionId);
       }
       await reloadBills();
+      showSuccess(bill.status === 'paid' ? 'Tagihan ditandai belum lunas.' : 'Tagihan berhasil ditandai lunas.');
     } catch (error) {
       setPageError(`Status tagihan gagal diperbarui: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -273,6 +285,7 @@ export default function GoldScreen() {
       setPageError('');
       await deleteMonthlyBill(billDeleteId);
       await reloadBills();
+      showSuccess('Tagihan berhasil dihapus.');
     } catch (error) {
       setPageError(`Tagihan gagal dihapus: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
@@ -340,11 +353,12 @@ export default function GoldScreen() {
     <Page
       title="Log Gold"
       subtitle="Keuangan yang lebih tertata, mengikuti waktu."
+      successMessage={successMessage}
       action={
         tab === 'transactions' ? (
           <Button compact title="+ Transaksi" onPress={() => openTransactionForm()} />
         ) : tab === 'bills' ? (
-          <Button compact title="+ Tagihan" onPress={() => { setEditingBill(null); setBillError(''); setBillFormOpen(true); }} />
+          <Button compact title="+ Tagihan" onPress={() => { clearSuccess(); setEditingBill(null); setBillError(''); setBillFormOpen(true); }} />
         ) : undefined
       }>
       <Panel style={styles.balanceCard}>
@@ -450,7 +464,7 @@ export default function GoldScreen() {
               bill={bill}
               key={bill.id}
               onTogglePaid={() => { void toggleBillPaid(bill); }}
-              onEdit={() => { setEditingBill(bill); setBillError(''); setBillFormOpen(true); }}
+              onEdit={() => { clearSuccess(); setEditingBill(bill); setBillError(''); setBillFormOpen(true); }}
               onDelete={() => setBillDeleteId(bill.id)}
             />
           )) : !billsLoading ? (

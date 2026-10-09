@@ -5,6 +5,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, ChoiceGroup, ConfirmDialog, Field, ModalSheet, Page, Panel, ThemeToggle, useColors } from '@/components/app-ui';
 import { useApp, type UserRole } from '@/context/app-context';
+import { useSuccessFeedback } from '@/hooks/use-success-feedback';
 import type { LocalDataExportFormat } from '@/types';
 import { isValidEmail } from '@/utils/validation';
 import { exportLocalData } from '@/utils/local-data-export';
@@ -18,6 +19,7 @@ const roles = [
 export default function ProfileScreen() {
   const { data, updateProfile, resetPassword, logout, deleteAccount } = useApp();
   const colors = useColors();
+  const { successMessage, showSuccess, clearSuccess } = useSuccessFeedback();
   const profile = data.profile;
   const [formOpen, setFormOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -34,6 +36,7 @@ export default function ProfileScreen() {
   const [exportError, setExportError] = useState('');
 
   const openForm = () => {
+    clearSuccess();
     setUsername(profile?.username ?? '');
     setEmail(profile?.email ?? '');
     setPassword('');
@@ -61,6 +64,7 @@ export default function ProfileScreen() {
         return;
       }
       updateProfile({ username: username.trim(), email: email.trim().toLowerCase(), role });
+      showSuccess('Profil berhasil diperbarui.');
       setFormOpen(false);
     } catch (saveError) {
       setError(`Profil gagal disimpan: ${saveError instanceof Error ? saveError.message : String(saveError)}`);
@@ -87,6 +91,7 @@ export default function ProfileScreen() {
         const asset = result.assets[0];
         const avatarUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
         updateProfile({ avatarUri });
+        showSuccess('Foto profil berhasil diperbarui.');
         setError('');
       }
     } catch {
@@ -99,6 +104,7 @@ export default function ProfileScreen() {
     setExportError('');
     try {
       await exportLocalData(data, format);
+      showSuccess(`Ekspor ${format.toUpperCase()} berhasil disiapkan.`);
     } catch (exportFailure) {
       setExportError(`Ekspor data gagal: ${exportFailure instanceof Error ? exportFailure.message : String(exportFailure)}`);
     } finally {
@@ -119,7 +125,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Page title="Profil" subtitle="Akun lokal dan preferensi aplikasi.">
+    <Page title="Profil" subtitle="Akun lokal dan preferensi aplikasi." successMessage={successMessage}>
       <Panel style={styles.profilePanel}>
         <View style={[styles.avatar, { backgroundColor: colors.surfaceSoft }]}>
           {profile?.avatarUri ? (

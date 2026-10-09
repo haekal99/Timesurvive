@@ -3,11 +3,21 @@ import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { KeyboardAwareScrollView, ThemeToggle } from '@/components/app-ui';
+import { KeyboardAwareScrollView, SuccessNotice, ThemeToggle } from '@/components/app-ui';
 import { AppTheme } from '@/constants/app-theme';
 import { useApp } from '@/context/app-context';
 
-export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+export function AuthShell({
+  title,
+  subtitle,
+  children,
+  successMessage,
+}: {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+  successMessage?: string;
+}) {
   const { data, persistenceError } = useApp();
   const colors = AppTheme[data.theme];
   return (
@@ -37,6 +47,11 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
             </View>
             <Text style={[styles.footer, { color: colors.muted }]}>PRIVATE BY DESIGN · STORED ON THIS DEVICE</Text>
           </KeyboardAwareScrollView>
+          {successMessage ? (
+            <View pointerEvents="none" style={styles.successToastPosition}>
+              <SuccessNotice message={successMessage} />
+            </View>
+          ) : null}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
@@ -58,4 +73,5 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, lineHeight: 20, marginTop: 5, marginBottom: 22 },
   footer: { fontSize: 9, fontWeight: '700', textAlign: 'center', marginTop: 17 },
   storageWarning: { fontSize: 12, lineHeight: 17, marginBottom: 12 },
+  successToastPosition: { position: 'absolute', top: 8, left: 20, right: 20, zIndex: 10, elevation: 10 },
 });

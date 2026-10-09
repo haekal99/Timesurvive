@@ -96,11 +96,13 @@ export function Page({
   subtitle,
   children,
   action,
+  successMessage,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   action?: ReactNode;
+  successMessage?: string;
 }) {
   const { data, persistenceError } = useApp();
   const colors = AppTheme[data.theme];
@@ -130,6 +132,11 @@ export function Page({
             {children}
           </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
+        {successMessage ? (
+          <View pointerEvents="none" style={styles.successToastPosition}>
+            <SuccessNotice message={successMessage} />
+          </View>
+        ) : null}
       </SafeAreaView>
     </View>
   );
@@ -151,6 +158,21 @@ export function EmptyState({ title, description }: { title: string; description?
       <Text style={[styles.emptyMark, { color: colors.primary }]}>○</Text>
       <Text style={[styles.emptyTitle, { color: colors.text }]}>{title}</Text>
       {description ? <Text style={[styles.emptyDescription, { color: colors.muted }]}>{description}</Text> : null}
+    </View>
+  );
+}
+
+export function SuccessNotice({ message }: { message: string }) {
+  const colors = useColors();
+  if (!message) return null;
+  return (
+    <View
+      accessibilityRole="alert"
+      style={[
+        styles.successNotice,
+        { backgroundColor: colors.positive + '14', borderColor: colors.positive + '55' },
+      ]}>
+      <Text style={[styles.successNoticeText, { color: colors.positive }]}>{message}</Text>
     </View>
   );
 }
@@ -448,6 +470,9 @@ const styles = StyleSheet.create({
   emptyMark: { fontSize: 27, lineHeight: 32, fontWeight: '800', marginBottom: 7 },
   emptyTitle: { fontSize: 14, fontWeight: '800', textAlign: 'center' },
   emptyDescription: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 5 },
+  successNotice: { padding: 16, borderWidth: 1, borderRadius: 20, marginBottom: 12 },
+  successNoticeText: { fontSize: 13, fontWeight: '700' },
+  successToastPosition: { position: 'absolute', top: 8, left: 20, right: 20, zIndex: 10, elevation: 10 },
   loadingState: { minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 9, borderWidth: 1, borderRadius: 18, padding: 16, marginBottom: 12 },
   loadingLabel: { fontSize: 12 },
   button: { minHeight: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
