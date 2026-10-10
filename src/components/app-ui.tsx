@@ -77,7 +77,8 @@ export function KeyboardAwareScrollView({
         <ScrollView
           {...props}
           ref={scrollRef}
-          contentContainerStyle={contentContainerStyle}
+          style={[props.style, styles.scrollView]}
+          contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
           keyboardDismissMode={props.keyboardDismissMode ?? 'on-drag'}
           onScroll={(event) => {
             scrollY.current = event.nativeEvent.contentOffset.y;
@@ -113,23 +114,24 @@ export function Page({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoiding}>
           <KeyboardAwareScrollView
-            contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <View style={styles.pageHeading}>
-              <View style={styles.titleBlock}>
-                <Text style={[styles.pageTitle, { color: colors.text }]}>{title}</Text>
-                {subtitle ? <Text style={[styles.pageSubtitle, { color: colors.muted }]}>{subtitle}</Text> : null}
+            <View style={styles.content}>
+              <View style={styles.pageHeading}>
+                <View style={styles.titleBlock}>
+                  <Text style={[styles.pageTitle, { color: colors.text }]}>{title}</Text>
+                  {subtitle ? <Text style={[styles.pageSubtitle, { color: colors.muted }]}>{subtitle}</Text> : null}
+                </View>
+                <View style={styles.pageActions}>
+                  {action}
+                  <ThemeToggle />
+                </View>
               </View>
-              <View style={styles.pageActions}>
-                {action}
-                <ThemeToggle />
-              </View>
+              {persistenceError ? (
+                <Text style={[styles.storageWarning, { color: colors.negative }]}>{persistenceError}</Text>
+              ) : null}
+              {children}
             </View>
-            {persistenceError ? (
-              <Text style={[styles.storageWarning, { color: colors.negative }]}>{persistenceError}</Text>
-            ) : null}
-            {children}
           </KeyboardAwareScrollView>
         </KeyboardAvoidingView>
         {successMessage ? (
@@ -459,7 +461,9 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, alignItems: 'center' },
   keyboardAvoiding: { flex: 1, width: '100%' },
   formScrollContainer: { flex: 1 },
-  content: { width: '100%', maxWidth: 700, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 112, alignSelf: 'center' },
+  scrollView: { flex: 1, minHeight: 0 },
+  scrollContent: { flexGrow: 1 },
+  content: { width: '100%', maxWidth: 700, flexGrow: 1, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 112, alignSelf: 'center' },
   pageHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 12 },
   titleBlock: { flex: 1 },
   pageActions: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 },

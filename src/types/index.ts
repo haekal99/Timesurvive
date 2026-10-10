@@ -109,6 +109,12 @@ export type AppTransaction = {
   notes: string;
 };
 
+export type DailyEvaluation = {
+  completed: string;
+  obstacles: string;
+  nextSteps: string;
+};
+
 export type AppUserProfile = {
   username: string;
   email: string;
@@ -128,6 +134,7 @@ export type PersistedAppData = {
   routineDay: string;
   games: AppGameSession[];
   transactions: AppTransaction[];
+  dailyEvaluations: Record<string, DailyEvaluation>;
   completedDays: string[];
 };
 
@@ -172,6 +179,7 @@ export type LocalDataExport = {
   routines: AppRoutine[];
   games: AppGameSession[];
   transactions: AppTransaction[];
+  dailyEvaluations: Record<string, DailyEvaluation>;
   monthlyBills: LocalMonthlyBill[];
   completedDays: string[];
   sqliteDatabase: CoreDatabaseExport;

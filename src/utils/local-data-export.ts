@@ -29,6 +29,9 @@ function toCsv(data: LocalDataExport) {
   for (const transaction of data.transactions) {
     addRecord('transaction', transaction.id, transaction.date, transaction);
   }
+  for (const [date, evaluation] of Object.entries(data.dailyEvaluations)) {
+    addRecord('daily_evaluation', date, date, evaluation);
+  }
   for (const bill of data.monthlyBills) {
     addRecord('monthly_bill', bill.id, '', bill);
   }
@@ -77,6 +80,7 @@ export async function exportLocalData(data: PersistedAppData, format: LocalDataE
     routines: data.routines,
     games: data.games,
     transactions: data.transactions,
+    dailyEvaluations: data.dailyEvaluations,
     monthlyBills: bills,
     completedDays: data.completedDays,
     sqliteDatabase,

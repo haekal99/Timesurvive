@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button, ChoiceGroup, ConfirmDialog, EmptyState, Field, ModalSheet, Page, Panel, useColors } from '@/components/app-ui';
 import { dateKey, useApp } from '@/context/app-context';
 import { useSuccessFeedback } from '@/hooks/use-success-feedback';
+import type { DailyEvaluation } from '@/types';
 import { isValidDateKey, isValidTimeRange } from '@/utils/validation';
 
 const filters = [
@@ -19,7 +20,7 @@ const historyScopes = [
 ];
 
 export default function DailyScreen() {
-  const { data, addRoutine, updateRoutine, deleteRoutine } = useApp();
+  const { data, addRoutine, updateRoutine, deleteRoutine, saveDailyEvaluation } = useApp();
   const { quickAdd } = useLocalSearchParams<{ quickAdd?: string }>();
   const colors = useColors();
   const [filter, setFilter] = useState('all');
@@ -33,6 +34,12 @@ export default function DailyScreen() {
   const [date, setDate] = useState(dateKey());
   const [formErrors, setFormErrors] = useState<{ time?: string; title?: string; date?: string }>({});
   const [selectedDate, setSelectedDate] = useState(dateKey());
+  const [evaluationDrafts, setEvaluationDrafts] = useState<Record<string, DailyEvaluation>>({});
+  const evaluation = evaluationDrafts[selectedDate] ?? data.dailyEvaluations[selectedDate] ?? {
+    completed: '',
+    obstacles: '',
+    nextSteps: '',
+  };
   const [clock, setClock] = useState(new Date());
   const [focusTitle, setFocusTitle] = useState('');
   const [focusSeconds, setFocusSeconds] = useState(25 * 60);
@@ -112,6 +119,15 @@ export default function DailyScreen() {
     setSelectedDate(routineDate);
     setHistoryScope('selected');
     setFormOpen(false);
+  };
+
+  const saveEvaluation = () => {
+    saveDailyEvaluation(selectedDate, evaluation);
+    showSuccess(
+      Object.values(evaluation).every((value) => !value.trim())
+        ? `Evaluasi tanggal ${selectedDate} berhasil dihapus.`
+        : `Evaluasi tanggal ${selectedDate} berhasil disimpan.`,
+    );
   };
 
   return (
@@ -198,6 +214,44 @@ export default function DailyScreen() {
           description={historyScope === 'all' ? 'Tambahkan aktivitas untuk melihat riwayat di sini.' : 'Coba ubah filter atau tambahkan aktivitas untuk tanggal ini.'}
         />
       )}
+
+      <Panel>
+        <Text style={[styles.summaryTitle, { color: colors.text }]}>Evaluasi harian</Text>
+        <Text style={[styles.summaryCaption, { color: colors.muted, marginBottom: 14 }]}>
+          Catatan untuk {new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${selectedDate}T12:00:00`))}
+        </Text>
+        <Field
+          label="1. Apa saja yang telah dilakukan hari ini?"
+          value={evaluation.completed}
+          onChangeText={(completed) => setEvaluationDrafts((current) => ({
+            ...current,
+            [selectedDate]: { ...evaluation, completed },
+          }))}
+          placeholder="Ceritakan hal-hal yang sudah kamu lakukan..."
+          multiline
+        />
+        <Field
+          label="2. Kendala hari ini"
+          value={evaluation.obstacles}
+          onChangeText={(obstacles) => setEvaluationDrafts((current) => ({
+            ...current,
+            [selectedDate]: { ...evaluation, obstacles },
+          }))}
+          placeholder="Apa yang terasa sulit atau menghambat?"
+          multiline
+        />
+        <Field
+          label="3. Langkah kecil untuk besok"
+          value={evaluation.nextSteps}
+          onChangeText={(nextSteps) => setEvaluationDrafts((current) => ({
+            ...current,
+            [selectedDate]: { ...evaluation, nextSteps },
+          }))}
+          placeholder="Satu langkah sederhana yang ingin dilakukan besok..."
+          multiline
+        />
+        <Button title="Simpan evaluasi" onPress={saveEvaluation} />
+      </Panel>
 
       <ModalSheet visible={formOpen} title={editingId ? 'Edit aktivitas' : 'Aktivitas baru'} onClose={() => setFormOpen(false)}>
         <Field label="Jam / rentang waktu" value={time} onChangeText={setTime} placeholder="08:00 - 10:00" error={formErrors.time} />

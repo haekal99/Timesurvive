@@ -10,6 +10,7 @@ import type {
   AppTransaction,
   AppUserProfile,
   AppUserRole,
+  DailyEvaluation,
   PersistedAppData,
 } from '@/types';
 
@@ -58,8 +59,31 @@ function freshData(): AppData {
     routineDay: dateKey(),
     games: [],
     transactions: [],
+    dailyEvaluations: {},
     completedDays: [],
   };
+}
+
+function normalizeDailyEvaluations(value: unknown): Record<string, DailyEvaluation> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([date, evaluation]) => {
+      if (!evaluation || typeof evaluation !== 'object') return [];
+      const entry = evaluation as Record<string, unknown>;
+      if (
+        typeof entry.completed !== 'string' ||
+        typeof entry.obstacles !== 'string' ||
+        typeof entry.nextSteps !== 'string'
+      ) {
+        return [];
+      }
+      return [[date, {
+        completed: entry.completed,
+        obstacles: entry.obstacles,
+        nextSteps: entry.nextSteps,
+      }]];
+    }),
+  );
 }
 
 export function createRecordId() {
@@ -89,6 +113,7 @@ type AppContextValue = {
   addRoutine: (routine: RoutineDraft & { date: string }) => void;
   updateRoutine: (id: string, changes: Partial<RoutineDraft & Pick<Routine, 'done'>>) => void;
   deleteRoutine: (id: string) => void;
+  saveDailyEvaluation: (date: string, evaluation: DailyEvaluation) => void;
   addGame: (game: GameDraft) => void;
   updateGame: (id: string, changes: Partial<GameDraft>) => void;
   deleteGame: (id: string) => void;
@@ -139,6 +164,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               : base.routines,
             games: Array.isArray(parsed.games) ? parsed.games : [],
             transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+            dailyEvaluations: normalizeDailyEvaluations(parsed.dailyEvaluations),
             completedDays: Array.isArray(parsed.completedDays) ? parsed.completedDays : [],
           };
           loaded.routineDay = dateKey();
@@ -292,6 +318,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       routines: current.routines.filter((routine) => routine.id !== id),
     }));
 
+  const saveDailyEvaluation = (date: string, evaluation: DailyEvaluation) =>
+    setData((current) => {
+      const dailyEvaluations = { ...current.dailyEvaluations };
+      const saved = {
+        completed: evaluation.completed.trim(),
+        obstacles: evaluation.obstacles.trim(),
+        nextSteps: evaluation.nextSteps.trim(),
+      };
+      if (Object.values(saved).every((value) => !value)) {
+        delete dailyEvaluations[date];
+      } else {
+        dailyEvaluations[date] = saved;
+      }
+      return { ...current, dailyEvaluations };
+    });
+
   const addGame = (game: GameDraft) =>
     setData((current) => ({ ...current, games: [{ ...game, id: createRecordId() }, ...current.games] }));
   const updateGame: AppContextValue['updateGame'] = (id, changes) =>
@@ -337,6 +379,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addRoutine,
         updateRoutine,
         deleteRoutine,
+        saveDailyEvaluation,
         addGame,
         updateGame,
         deleteGame,
